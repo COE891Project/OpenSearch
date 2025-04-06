@@ -122,6 +122,14 @@ public class NodeConnectionsServiceTests extends OpenSearchTestCase {
         return builder.build();
     }
 
+    public void testConnectNoNodes() {
+        final NodeConnectionsService service = new NodeConnectionsService(Settings.EMPTY, threadPool, transportService);
+
+        Runnable onCompletion = () -> logger.info("No nodes connected");
+        service.connectToNodes(DiscoveryNodes.EMPTY_NODES, onCompletion);
+        assertConnectedExactlyToNodes(DiscoveryNodes.EMPTY_NODES);
+    }
+
     public void testConnectAndDisconnect() throws Exception {
         final NodeConnectionsService service = new NodeConnectionsService(Settings.EMPTY, threadPool, transportService);
 
