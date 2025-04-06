@@ -36,14 +36,17 @@ import org.opensearch.Version;
 import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Settings;
+import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.common.io.stream.BufferedChecksumStreamOutput;
 import org.opensearch.core.common.io.stream.StreamInput;
+import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.core.common.transport.TransportAddress;
 import org.opensearch.node.remotestore.RemoteStoreNodeAttribute;
 import org.opensearch.test.NodeRoles;
 import org.opensearch.test.OpenSearchTestCase;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -220,6 +223,34 @@ public class DiscoveryNodeTests extends OpenSearchTestCase {
             assertThat(serialized.getRoles().stream().map(DiscoveryNodeRole::roleName).collect(Collectors.joining()), equalTo("data"));
         }
 
+    }
+
+    public void testDiscoveryNodeWriteWithAttributes() throws Exception {
+        InetAddress inetAddress = randomBoolean()
+            ? InetAddress.getByName("192.0.2.1")
+            : InetAddress.getByAddress("name1", new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 });
+        TransportAddress transportAddress = new TransportAddress(inetAddress, randomIntBetween(0, 65535));
+        DiscoveryNode node = new DiscoveryNode("name1", "id1", transportAddress, Map.of("a", "test1", "b", "test2"), emptySet(), Version.CURRENT);
+
+        try (BytesStreamOutput testOut = new BytesStreamOutput()) {
+            // Same thing as node.writeToUtil(testOut, true)
+            node.writeToWithAttribute(testOut);
+            System.out.println(Arrays.toString(BytesReference.toBytes(testOut.bytes())));
+        }
+    }
+
+    public void testDiscoveryNodeWriteWithoutAttributes() throws Exception {
+        InetAddress inetAddress = randomBoolean()
+            ? InetAddress.getByName("192.0.2.1")
+            : InetAddress.getByAddress("name1", new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 });
+        TransportAddress transportAddress = new TransportAddress(inetAddress, randomIntBetween(0, 65535));
+        DiscoveryNode node = new DiscoveryNode("name1", "id1", transportAddress, Map.of("a", "test1", "b", "test2"), emptySet(), Version.CURRENT);
+
+        try (BytesStreamOutput testOut = new BytesStreamOutput()) {
+            // Same thing as node.writeToUtil(testOut, false)
+            node.writeTo(testOut);
+            System.out.println(Arrays.toString(BytesReference.toBytes(testOut.bytes())));
+        }
     }
 
     public void testDiscoveryNodeIsRemoteClusterClientDefault() {
